@@ -79,7 +79,7 @@ const bintohex = str => {
   return dec.toString(16);
 };
 
-String.prototype.hexEncode = function() {
+String.prototype.hexencode = function() {
   let hex, i;
 
   let result = "";
@@ -136,8 +136,6 @@ class hashzilla {
       return k;
     });
 
-    console.log(allchunks);
-
     for (let i = 0; i < allchunks.length; i++) {
       let a = h0;
       let b = h1;
@@ -189,7 +187,7 @@ class hashzilla {
 
   sha256() {}
 
-  jpz() {
+  jpz(saltlen) {
     let hashes = [
       "1110000101100001",
       "0110001011110001",
@@ -240,8 +238,6 @@ class hashzilla {
       return (this.salt = arr);
     };
 
-    const salt = new saltshaker(6);
-
     const hasher = function(cyclecount, input) {
       let arr = [];
 
@@ -282,7 +278,6 @@ class hashzilla {
       });
 
       comphashes = comphashes.splice(0, hashes.length);
-      console.log(comphashes);
 
       let cons = [
         hashes[0],
@@ -359,13 +354,28 @@ class hashzilla {
         cons[15] = trunc(binadd(hashes[7], cons[7]));
       }
 
-      console.log(cons);
-
       for (let i = 0; i < cons.length; i++) {
-        cons[i] = cons[i].padStart(32, "0");
         cons[i] = bintohex(cons[i]);
+        cons[i] = cons[i]
+          .split("")
+          .splice(0, 12)
+          .join("");
+        cons[i] = cons[i].padStart(8, "0");
+        cons[i] = cons[i].hexencode();
       }
-      return (this.hashed = cons.join(""));
+
+      cons = cons.join("").match(/.{1,4}/g);
+      let newoutput = [];
+      for (let i = 0; i < cons.length; i++) {
+        let hex = cons[i].toString().replace(/00/, 32);
+        let str = "";
+        for (let n = 0; n < hex.length; n += 2) {
+          str += String.fromCharCode(parseInt(hex.substr(n, 2), 16));
+        }
+        newoutput.push(str);
+      }
+
+      return (this.hashed = newoutput.join(""));
     };
 
     const input = this.input;
@@ -413,11 +423,10 @@ class hashzilla {
     const chunks = newbinary.match(/.{1,512}/g);
     const wordchunks = chunks.map(c => c.match(/.{1,32}/g));
     const hashresults = new hasher(100, wordchunks);
+    console.log(hashresults);
+    const hexhash = hashresults.hashed.hexencode();
+    const salt = new saltshaker(saltlen).salt;
 
-    return hashresults.hashed + salt.salt;
+    return { hash: hexhash, salt: salt };
   }
 }
-
-console.log(new hashzilla("weior1").jpz());
-
-// console.log(new hashzilla("world").sha1());
