@@ -187,7 +187,8 @@ class hashzilla {
 
   sha256() {}
 
-  jpz(saltlen) {
+  // this is the first one I made and similar inputs produce such similar results that it's basically useless.
+  jpz1() {
     let hashes = [
       "1110000101100001",
       "0110001011110001",
@@ -331,39 +332,49 @@ class hashzilla {
 
           cons[6] = cons[4];
           cons[4] = cons[2];
-          cons[2] = rotleft(cons[1], 10);
-          cons[1] = cons[0];
+          cons[2] = rotleft(cons[1], 10) && hashes[20];
+          cons[1] = cons[0] && hashes[30];
           cons[0] = tmp;
+          cons[5] = and(cons[2], cons[3]);
+          cons[7] = Math.abs(current & (hashes[31] << hashes[14])).toString(2);
+          cons[8] = Math.abs(current | (hashes[30] >> hashes[15])).toString(2);
+          cons[9] = Math.abs((current >> hashes[29]) & hashes[16]).toString(2);
+          cons[10] = Math.abs(current ^ (hashes[28] & hashes[17])).toString(2);
+          cons[11] = Math.abs((current << hashes[27]) | hashes[18]).toString(2);
+          cons[12] = Math.abs(current | xor(hashes[26], hashes[19])).toString(
+            2
+          );
+          cons[13] = Math.abs(current | (hashes[25] << hashes[20])).toString(2);
+          cons[14] = Math.abs(current | (hashes[24] >> hashes[21])).toString(2);
+          cons[15] = Math.abs(current | (hashes[23] << hashes[22])).toString(2);
         }
 
-        cons[0] = trunc(binadd(hashes[7], cons[0]));
-        cons[1] = trunc(binadd(hashes[8], cons[1]));
-        cons[2] = trunc(binadd(hashes[9], cons[2]));
-        cons[3] = trunc(binadd(hashes[10], cons[3]));
-        cons[4] = trunc(binadd(hashes[11], cons[4]));
-        cons[5] = trunc(binadd(hashes[12], cons[5]));
-        cons[6] = trunc(binadd(hashes[13], cons[6]));
-        cons[7] = trunc(binadd(hashes[14], cons[7]));
-        cons[8] = trunc(binadd(hashes[0], cons[0]));
-        cons[9] = trunc(binadd(hashes[1], cons[1]));
-        cons[10] = trunc(binadd(hashes[2], cons[2]));
-        cons[11] = trunc(binadd(hashes[3], cons[3]));
-        cons[12] = trunc(binadd(hashes[4], cons[4]));
-        cons[13] = trunc(binadd(hashes[5], cons[5]));
-        cons[14] = trunc(binadd(hashes[6], cons[6]));
-        cons[15] = trunc(binadd(hashes[7], cons[7]));
+        cons[0] = trunc(binadd(hashes[8], cons[0]), 16);
+        cons[1] = trunc(binadd(hashes[9], cons[1]), 16);
+        cons[2] = trunc(binadd(hashes[10], cons[2]), 16);
+        cons[3] = trunc(binadd(hashes[11], cons[3]), 16);
+        cons[4] = trunc(binadd(hashes[12], cons[4]), 16);
+        cons[5] = trunc(binadd(hashes[13], cons[5]), 16);
+        cons[6] = trunc(binadd(hashes[14], cons[6]), 16);
+        cons[7] = trunc(binadd(hashes[15], cons[7]), 16);
+        cons[8] = trunc(binadd(hashes[0], cons[0]), 16);
+        cons[9] = trunc(binadd(hashes[1], cons[1]), 16);
+        cons[10] = trunc(binadd(hashes[2], cons[2]), 16);
+        cons[11] = trunc(binadd(hashes[3], cons[3]), 16);
+        cons[12] = trunc(binadd(hashes[4], cons[4]), 16);
+        cons[13] = trunc(binadd(hashes[5], cons[5]), 16);
+        cons[14] = trunc(binadd(hashes[6], cons[6]), 16);
+        cons[15] = trunc(binadd(hashes[7], cons[7]), 16);
       }
 
       for (let i = 0; i < cons.length; i++) {
         cons[i] = bintohex(cons[i]);
         cons[i] = cons[i]
           .split("")
-          .splice(0, 12)
+          .splice(0, 64)
           .join("");
-        cons[i] = cons[i].padStart(8, "0");
         cons[i] = cons[i].hexencode();
       }
-
       cons = cons.join("").match(/.{1,4}/g);
       let newoutput = [];
       for (let i = 0; i < cons.length; i++) {
@@ -372,7 +383,9 @@ class hashzilla {
         for (let n = 0; n < hex.length; n += 2) {
           str += String.fromCharCode(parseInt(hex.substr(n, 2), 16));
         }
-        newoutput.push(str);
+        if (str != 20) {
+          newoutput.push(str);
+        }
       }
 
       return (this.hashed = newoutput.join(""));
@@ -394,7 +407,7 @@ class hashzilla {
     let bin = ascii.map(n => n.toString(2)).map(n => n.padStart(8, "0"));
 
     for (var i = 0; i < binary.length; i++) {
-      if (binary.length % 1024 !== 896) {
+      if (binary.length % 2048 !== 1792) {
         binary += "0";
         binaryrev += "0";
       }
@@ -417,16 +430,15 @@ class hashzilla {
         .join("");
 
     for (var i = 0; i < newbinary.length; i++) {
-      if (newbinary.length % 1024 !== 0) newbinary += "0";
+      if (newbinary.length % 2048 !== 0) newbinary += "0";
     }
 
     const chunks = newbinary.match(/.{1,512}/g);
     const wordchunks = chunks.map(c => c.match(/.{1,32}/g));
-    const hashresults = new hasher(100, wordchunks);
-    console.log(hashresults);
-    const hexhash = hashresults.hashed.hexencode();
-    const salt = new saltshaker(saltlen).salt;
+    const hashresults = new hasher(1000, wordchunks);
+    const hexhash = hashresults.hashed.replace(/2/gim, "").padEnd(64, "0");
+    const salt = new saltshaker(63).salt;
 
-    return { hash: hexhash, salt: salt };
+    return { hash: hexhash, salt: salt, full: hexhash + salt };
   }
 }
